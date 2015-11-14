@@ -6,20 +6,33 @@
 		<script src="node_modules/jquery/dist/jquery.js"></script>
 		<script>
 		$().ready(function(){
-			console.info("how");
-			 var socket = io();
-			  $('#myform').submit(function(e){
-			  	e.preventDefault();
-			  	console.info("hey");
-			  	socket.emit('chat message', $('#m').val());
-			  	$('#m').val('');
-			  	return false;
-			  });
-				socket.on('chat message', function(data){
-					$("#messages").append($("<li>").text(data));
-				})
-
+			var socket = io();
+			delete_cookie("username")
+			console.info(document.cookie)
+			$('#myform').submit(function(e){
+				e.preventDefault();
+				socket.emit('chat message', $('#m').val());
+				$('#m').val('');
+				return false;
 			});
+
+			socket.on('chat message', function(data){
+				$("#messages").append($("<li>").text(data));
+			});
+
+			$("#setUserName").bind("click", function(e){
+				e.preventDefault();
+				var expires = "",
+					value = $('#userName').val();
+				document.cookie = "username="+value+expires+"; path=/";
+				$("#loggedIn").text(value);
+			});
+
+			function delete_cookie(name) {
+			  document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+			}
+
+		});
 
 		</script>
 		<style>
@@ -34,9 +47,11 @@
 		</style>
 	</head>
 	<body>
+		<h3>You are logged in as <span id="loggedIn"></span></h3>
 		<ul id="messages"></ul>
 		<form id="myform">
-			<input id="m" type="text"/><button>Send</button>
+			<input id="m" type="text" autocomplete="off" /><button>Send</button>
+			<input id="userName" type="text" autocomplete="off" /><button id="setUserName">Set user name</button>
 		</form>
 	</body>
 </html>
