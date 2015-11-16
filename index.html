@@ -6,15 +6,40 @@
 		<script src="node_modules/jquery/dist/jquery.js"></script>
 		<script>
 		$().ready(function(){
-			var socket = io();
-			delete_cookie("username")
-			console.info(document.cookie)
+			var socket = io(),
+				isAuthorized = false,
+				username = "";
+			// completely log out
+			delete_cookie("username");
+			$(".unauthorized").show();
+			//socket.emit('authorization', false);
+
+			socket.on('authorization', function(data){
+				console.info("isAuthorized");
+				console.info(data);
+				isAuthorized = data.username;
+				if(isAuthorized){
+					username = isAuthorized;
+					$(".unauthorized").hide();
+					$(".authorized").show();
+				} else {
+					username = ""
+					$(".unauthorized").show();
+					$(".authorized").hide();
+				}
+				console.info(data.users);
+			});			
+
 			$('#myform').submit(function(e){
 				e.preventDefault();
 				socket.emit('chat message', $('#m').val());
 				$('#m').val('');
 				return false;
 			});
+
+			socket.on("users", function(users){
+				console.info(users);
+			})
 
 			socket.on('chat message', function(data){
 				$("#messages").append($("<li>").text(data));
@@ -26,10 +51,17 @@
 					value = $('#userName').val();
 				document.cookie = "username="+value+expires+"; path=/";
 				$("#loggedIn").text(value);
+				if(value){
+					socket.emit('authorization', value);
+				}
 			});
 
 			function delete_cookie(name) {
 			  document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+			}
+
+			function get_cookie(name){
+				console.info(document.cookie[name]);
 			}
 
 		});
@@ -44,14 +76,41 @@
 		      #messages { list-style-type: none; margin: 0; padding: 0; }
 		      #messages li { padding: 5px 10px; }
 		      #messages li:nth-child(odd) { background: #eee; }
+		      .authorized, .unauthorized {display: none;}
+		      .signOn {margin: 5px;}
+		      .signOn h3 {
+		      	margin: 0 0 10px;
+		      }
+		      .left, .right { float:right;}
+		      .left { width: 65%;}
+		      .right {background-color: lightgray; height:100vh; padding:10px; width:35%;}
+		      .right h4 {text-align:center;}
 		</style>
 	</head>
 	<body>
-		<h3>You are logged in as <span id="loggedIn"></span></h3>
-		<ul id="messages"></ul>
-		<form id="myform">
-			<input id="m" type="text" autocomplete="off" /><button>Send</button>
-			<input id="userName" type="text" autocomplete="off" /><button id="setUserName">Set user name</button>
-		</form>
+		<div class="authorized">
+			<div class="right">
+				<h4>Users</h4>
+				<ul id="users"></ul>
+			</div>
+			<div class="left">
+				<div class="signOn">
+					<h3>You are logged in as <span id="loggedIn"></span></h3>
+				</div>
+				<ul id="messages"></ul>
+			</div>
+			<form id="myform">
+				<input id="m" type="text" autocomplete="off" /><button>Send</button>
+			</form>
+
+
+		</div>
+		<div class="unauthorized">
+			<div class="signOn">
+				<h3>You are not logged it</h3>
+				<em>Please log in to chat</em>&nbsp;
+				<input id="userName" type="text" autocomplete="off" />&nbsp;<button id="setUserName">Set user name</button>
+			</div>
+		</div>
 	</body>
 </html>

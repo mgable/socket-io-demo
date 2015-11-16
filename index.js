@@ -1,7 +1,8 @@
 "use strict";
 var app = require('express')(),
 	http = require('http').Server(app),
-	io = require('socket.io')(http);
+	io = require('socket.io')(http),
+	users = [];
 
 app.get("/", function(req,res){
 	res.sendFile(__dirname + "/index.html");
@@ -30,18 +31,39 @@ http.listen(3001, function(){
 //});
 
 io.on('connection', function(socket){
-	console.info('a user connected');
-	//console.info(socket.handshake);
+	//var user = getUserNameFromCookie(socket.handshake.headers.cookie);
+	var user;
+	socket.mychat = {};
+	console.info('user connected: ' + user);
+
 	socket.on('disconnect', function(){
-		console.info("user disconnected");
+		var user = socket.mychat.username
+		console.info("user " + user + " disconnected");
+		removeUser(socket.mychat.username);
+		broadcastUsers();
 	});
 
 	socket.on('chat message', function(msg){
-		console.info("message: " + msg);
-		var user = (getUserNameFromCookie(socket.handshake.headers.cookie).username);
-		io.emit('chat message', user + ": " + msg);
+		chat(user, msg);
+	});
+
+	socket.on('authorization', function(name){
+		console.info("authorizing " + name);
+		user = name;
+		socket.mychat = {username: name};
+		socket.emit('authorization', socket.mychat);
+		users.push(user);
+		broadcastUsers();
 	});
 });
+
+function removeUser(user){
+	users.splice(users.indexOf(user),1);
+}
+
+function broadcastUsers(){
+	io.emit('users', users);
+}
 
 function getUserNameFromCookie(rawCookie){
 	var cookie = {};
@@ -49,6 +71,15 @@ function getUserNameFromCookie(rawCookie){
 		var temp = value.split(/=/);
 		cookie[temp[0]] = temp[1];
 	});
-	return cookie;
+	return cookie.username;
+}
+
+function chat(user, msg){
+	if (user){
+		console.info("message: " + msg);
+		io.emit('chat message', user + ": " + msg);
+	} else {
+		io.emit('authorization', 'Please log in.');
+	}
 }
 
