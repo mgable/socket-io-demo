@@ -27,7 +27,6 @@
 					$(".unauthorized").show();
 					$(".authorized").hide();
 				}
-				console.info(data.users);
 			});			
 
 			$('#myform').submit(function(e){
@@ -39,6 +38,7 @@
 
 			socket.on("users", function(users){
 				console.info(users);
+				createList(users);
 			})
 
 			socket.on('chat message', function(data){
@@ -62,6 +62,19 @@
 
 			function get_cookie(name){
 				console.info(document.cookie[name]);
+			}
+
+			function createList(_users){
+				var frag = document.createDocumentFragment();
+				_users.forEach(function(user){
+					var element = document.createElement("li"),
+						text = document.createTextNode(user);
+					element.appendChild(text);
+					frag.appendChild(element)
+				console.info(user);
+				});
+
+				$("#users").html(frag);
 			}
 
 		});

@@ -9,7 +9,6 @@ app.get("/", function(req,res){
 });
 
 app.get("/*", function(req,res){
-	// console.info(req);
 	res.sendFile(__dirname + req.url)
 });
 
@@ -37,10 +36,12 @@ io.on('connection', function(socket){
 	console.info('user connected: ' + user);
 
 	socket.on('disconnect', function(){
-		var user = socket.mychat.username
-		console.info("user " + user + " disconnected");
-		removeUser(socket.mychat.username);
-		broadcastUsers();
+		var user = socket.mychat.username;
+		if (user){
+			console.info("user " + user + " disconnected");
+			removeUser(socket.mychat.username);
+			broadcastUsers();
+		}
 	});
 
 	socket.on('chat message', function(msg){
@@ -52,13 +53,21 @@ io.on('connection', function(socket){
 		user = name;
 		socket.mychat = {username: name};
 		socket.emit('authorization', socket.mychat);
-		users.push(user);
+		addUser(user)
 		broadcastUsers();
 	});
 });
 
 function removeUser(user){
-	users.splice(users.indexOf(user),1);
+	console.info("removing user " + user);
+	var userIndex = users.indexOf(user);
+	if (userIndex > -1){
+		users.splice(userIndex,1);
+	}
+}
+
+function addUser(user){
+	users.push(user);
 }
 
 function broadcastUsers(){
